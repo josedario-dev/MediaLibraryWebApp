@@ -1,0 +1,154 @@
+﻿@page "/country/{id:int}"
+@using Microsoft.Extensions.Logging;
+@using MudBlazor
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IMudMessagingService _mudMessagingService
+@using Newtonsoft.Json
+@using System.Text;
+
+
+<EditForm Model="@countryDto" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField Label="Nombre" @bind-Value="countryDto.Name" />
+        </MudItem>
+    </MudGrid>
+
+    <div class="mud-button-row">
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Guardar</MudButton>
+        <MudButton ButtonType="ButtonType.Button" Color="Color.Secondary" OnClick="HandleCancel">Cancelar</MudButton>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+
+    private CountryDto? countryDto = new CountryDto();
+
+    // Este método se llama cuando los parámetros del componente se han establecido
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadSqlServerSourceClientDto();
+    }
+
+    private async Task LoadSqlServerSourceClientDto()
+    {
+        if (id != 0)
+        {
+            // Modificación de registros
+            Http.DefaultRequestHeaders.Clear();
+            try
+            {
+                // Modificación
+                var json = JsonConvert.SerializeObject(countryDto);
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Enviar la solicitud PUT
+                var response = await Http.PutAsync($"api/Countries/{id}", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    NavigationManager.NavigateTo($"/countries");
+                }
+                else
+                {
+                    // Manejar errores, por ejemplo, mostrar un mensaje al usuario
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        else
+        {
+            
+            // Adición
+            var json = JsonConvert.SerializeObject(countryDto);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Enviar la solicitud POST
+            try
+            {
+                var response = await Http.PostAsync($"api/Countries", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    NavigationManager.NavigateTo($"/countries");
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+    }
+
+
+    private async Task HandleValidSubmit()
+    {
+        // Aquí se implementará la lógica para manejar el envío del formulario
+        if (id != 0)
+        {
+            // Modificación
+            var json = JsonConvert.SerializeObject(countryDto);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Enviar la solicitud PUT
+            var response = await Http.PutAsync($"api/Countries/{id}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo($"/countries");
+            }
+            else
+            {
+                // Manejar errores, por ejemplo, mostrar un mensaje al usuario
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+            }
+        }
+        else
+        {
+            // Adición
+            var json = JsonConvert.SerializeObject(countryDto);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Enviar la solicitud PUT
+            try
+            {
+                var response = await Http.PostAsync($"api/Countries", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    NavigationManager.NavigateTo($"/countries");
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+    }
+
+    private void HandleCancel()
+    {
+        // Redirige al usuario a la página deseada al hacer clic en cancelar
+        NavigationManager.NavigateTo($"/countries");
+    }
+}

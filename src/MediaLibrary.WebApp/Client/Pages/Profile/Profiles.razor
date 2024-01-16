@@ -1,0 +1,212 @@
+﻿@page "/"
+@using MediaLibrary.WebApp.Client.Pages.Auth
+@using MediaLibrary.WebApp.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging;
+@using System.Text
+@inject HttpClient Http
+@inject NavigationManager _navigationManager
+@inject IAppState _appState
+@inject IJSRuntime JSRuntime
+@inject IMudMessagingService _mudMessagingService
+
+<PageTitle>Inicio</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <MudStack Style="height:100%;" Class="bg-city pa-8">
+            <MudPaper Class="d-flex align-start justify-start mud-width-full">
+                <MudText Typo="Typo.h4" Class="pa-5">Mis perfiles de autor</MudText>
+                <MudSpacer />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="align-self-center ma-5" OnClick="@OpenCreateModal">Nuevo perfil de autor</MudButton>
+            </MudPaper>
+
+            @if (IsLoading)
+            {
+                <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+            }
+            else
+            {
+                if (!contributors.Any())
+                {
+                    <MudText Typo="Typo.body1" Class="pa-5">Actualmente no tienes perfiles de autor</MudText>
+                }
+                else
+                {
+                    <MudGrid>
+                        @foreach (ContributorDto contributor in contributors)
+                        {
+                            <MudItem xs="12" sm="4" md="3" lg="3">
+                                <MudCard>
+                                    <MudCardHeader>
+                                        <CardHeaderContent>
+                                            <MudText Typo="Typo.h6">@contributor.NickName</MudText>
+                                        </CardHeaderContent>
+                                        <CardHeaderActions>
+                                                <MudAvatar>
+                                                    <MudImage Src="@contributor.PhotoPath"></MudImage>
+                                                </MudAvatar>
+                                        </CardHeaderActions>
+                                    </MudCardHeader>
+                                    <MudCardContent>
+                                        <MudText>Biografía</MudText>
+                                        <MudText>@contributor.Biography</MudText>
+                                    </MudCardContent>
+                                    <MudCardActions>
+                                        <MudSpacer />
+                                            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => Continue(contributor.Id, contributor.NickName, contributor.PhotoPath, contributor.ProfileId))">Seleccionar</MudButton>
+                                    </MudCardActions>
+                                </MudCard>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
+            }
+        </MudStack>
+    </Authorized>
+    <NotAuthorized>
+        <Index />
+    </NotAuthorized>
+</AuthorizeView>
+
+<MudDialog @bind-IsVisible="@Visible" Options="@dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            Crear perfil de autor
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="12">
+                <MudPaper Class="pa-4 mud-height-full" Style="background-color:#FFFFFF;">
+                    <EditForm Model="@ContributorInfo" OnValidSubmit="CreateContributor">
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudTextField Label="Nombre artístico" @bind-Value="ContributorInfo.NickName" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudDatePicker Label="Fecha nacimiento" @bind-Date="ContributorInfo.DateOfBirth" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField Lines="7" Label="Biografía" @bind-Value="ContributorInfo.Biography" />
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <InputImg Label="Foto" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
+                            </MudItem>
+                        </MudGrid>
+                    </EditForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" OnClick="@(() => { Visible = false; })" Class="px-10">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@CreateContributor" Class="px-10">Crear</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
+
+    private string? imageUrl;
+    private bool IsLoading;
+    private bool Visible;
+    private ContributorDto ContributorInfo = new();
+    private List<ContributorDto> contributors = new List<ContributorDto>();
+    private DialogOptions dialogOptions = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Large };
+
+    // Se ejecuta cuándo el componente está listo
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await authenticationStateTask;
+        var isAuthenticated = authenticationState.User.Identity!.IsAuthenticated;
+        if (isAuthenticated)
+        {
+            LoadData();
+        }
+        else
+        {
+            //_navigationManager.NavigateTo("/login");
+        }
+    }
+
+    private void ImageSelected(string imagenBase64)
+    {
+        ContributorInfo.Photo = imagenBase64;
+        imageUrl = null;
+    }
+
+    private async void LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+            var response = await Http.GetFromJsonAsync<List<ContributorDto>>("api/ContributorDetail");
+            if (response != null)
+            {
+                contributors = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar las excepciones
+            _mudMessagingService.ShowAlertError("Cargando registros", $"Error al cargar los registros {ex.InnerException}", "Aceptar");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        ContributorInfo = new ContributorDto();
+        Visible = true;
+    }
+
+    private async void CreateContributor()
+    {
+        _mudMessagingService.ShowLoader("Creando");
+
+        // Adición
+        var json = System.Text.Json.JsonSerializer.Serialize(ContributorInfo);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Enviar la solicitud PUT
+        try
+        {
+            var response = await Http.PostAsync($"api/Contributors", content);
+            if (response.IsSuccessStatusCode)
+            {
+                Visible = false;
+
+                LoadData();
+            }
+            else
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+            }
+        }
+        catch (Exception ex)
+        {
+            _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {ex.Message}", "Aceptar");
+        }
+        finally
+        {
+            _mudMessagingService.HideLoader();
+        }
+
+    }
+
+    private void Continue(int id, string nickName, string photo, string profileId)
+    {
+        _appState.ContributorId = id;
+        _appState.NickName = nickName;
+        _appState.Photo = photo;
+        _appState.ProfileId = profileId;
+        _navigationManager.NavigateTo("/explore");
+    }
+}

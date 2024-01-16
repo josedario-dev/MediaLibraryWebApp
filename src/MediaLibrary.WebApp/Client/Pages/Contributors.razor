@@ -1,0 +1,104 @@
+﻿@page "/contributors"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging;
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IMudMessagingService _mudMessagingService
+@attribute [Authorize(Roles = "Admin")]
+
+@if (IsLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudDataGrid @ref="dataGrid" MultiSelection="false" Items="@clientDetails" Filterable="true"
+                 Hideable="true">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Detalle de Autores</MudText>
+            <MudSpacer />
+            <MudTooltip Text="Agregar">
+                <MudIconButton Size="@Size.Small" OnClick="AddClientDetail" Icon="@Icons.Material.Outlined.Add" />
+            </MudTooltip>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.Id" Title="Id" />
+            <PropertyColumn Property="x => x.NickName" Title="Nombre" />
+            <PropertyColumn Property="x => x.PhotoPath" Title="Foto" />
+            <PropertyColumn Property="x => x.Biography" Title="Biografía" />
+            <PropertyColumn Property="x => x.DateOfBirth" Title="Fecha de cumpleaños" />
+            <TemplateColumn T="ContributorDto" Title="Acciones">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="() => UpdateClientDetail(context.Item.Id)" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteDoc(context.Item.Id)" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+
+        <PagerContent>
+            <MudDataGridPager T="ContributorDto" />
+        </PagerContent>
+    </MudDataGrid>
+}
+
+@code {
+    private bool IsLoading { get; set; }
+    private List<ContributorDto> clientDetails = new List<ContributorDto>();
+    private MudDataGrid<ContributorDto>? dataGrid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+        await LoadData();
+        IsLoading = false;
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<ContributorDto>>("api/ContributorDetail");
+            if (response != null)
+            {
+                clientDetails = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar las excepciones
+            _mudMessagingService.ShowAlertError("Cargando registros", $"Error al cargar los registros {ex.InnerException}", "Aceptar");
+        }
+    }
+
+    private void AddClientDetail()
+    {
+        // Implementar lógica para agregar detalles de cliente
+        NavigationManager.NavigateTo("/contributor/0");
+    }
+
+    private void UpdateClientDetail(long id)
+    {
+        NavigationManager.NavigateTo($"/contributor/{id}");
+    }
+
+    private async Task DeleteDoc(long id)
+    {
+        // Implement the logic to update client detail
+        _mudMessagingService.ShowLoader("Eliminando archivo...");
+        var response = await Http.DeleteAsync($"api/Contributors/{id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Redirige al usuario a la página original
+            await LoadData();
+        }
+        else
+        {
+            // Handle the error
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            _mudMessagingService.ShowAlertError("Eliminando", $"No se pudo eliminar el registro, revise la conexión con el servidor, o que el registro no tenga relación con otras operaciones. De ser así, el sistema impide su eliminación para conserver la integridad de la información {errorMessage}", "Aceptar");
+        }
+        NavigationManager.NavigateTo($"/contributors");
+    }
+}

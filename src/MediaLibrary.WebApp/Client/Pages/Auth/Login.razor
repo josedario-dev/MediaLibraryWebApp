@@ -1,0 +1,55 @@
+﻿@page "/Login"
+@using CurrieTechnologies.Razor.SweetAlert2
+@using MediaLibrary.WebApp.Client.Repositories.Contracts
+@using MediaLibrary.WebApp.Client.Auth
+@inject IMudMessagingService _mudMessagingService
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@inject ILoginService loginService
+
+<MudPaper Class="pa-4">
+    <MudContainer>
+        <MudText Typo="Typo.h5">Iniciar Sesión</MudText>
+
+        <EditForm Model="loginDto" OnValidSubmit="LoginAsync">
+            <DataAnnotationsValidator />
+
+            <MudGrid Justify="Justify.Center">
+                <MudItem xs="12">
+                    <MudTextField Label="Email" @bind-Value="loginDto.Email" FullWidth />
+                 </MudItem>
+                 <MudItem xs="12">
+                     <MudTextField Label="Contraseña" @bind-Value="loginDto.Password" FullWidth T="string" InputType="InputType.Password" />
+                 </MudItem>
+                 <MudItem xs="12">
+                     <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">Iniciar Sesión</MudButton>
+                 </MudItem>
+             </MudGrid>
+         </EditForm>
+     </MudContainer>
+ </MudPaper>
+
+
+ @code {
+    private LoginDto loginDto = new();
+
+    private async Task LoginAsync()
+    {
+        _mudMessagingService.ShowLoader("Iniciando sesión");
+
+        var responseHttp = await repository.Post<LoginDto, TokenDto>("/api/accounts/Login", loginDto);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            _mudMessagingService.HideLoader();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        await loginService.LoginAsync(responseHttp.Response!.Token);
+
+        _mudMessagingService.HideLoader();
+        navigationManager.NavigateTo("/");
+    }
+}

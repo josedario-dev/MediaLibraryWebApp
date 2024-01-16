@@ -1,0 +1,44 @@
+﻿@using MediaLibrary.WebApp.Shared
+@inject IAppState _appState
+@inject NavigationManager _navigationManager
+
+<Router AppAssembly="@typeof(App).Assembly" OnNavigateAsync="@OnNavigateAsync">
+
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <Authorizing>
+                <p>Autorizando...</p>
+            </Authorizing>
+            <NotAuthorized>
+                <p>No estas autorizado para ver este contenido...</p>
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <CascadingAuthenticationState>
+            <PageTitle>No encontrado</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Lo sentimos no hay nada en esta ruta.</p>
+            </LayoutView>
+        </CascadingAuthenticationState>
+    </NotFound>
+</Router>
+
+@code   
+{
+    private async Task OnNavigateAsync(NavigationContext navigationContext)
+    {
+        var path = navigationContext.Path.ToLower();
+        if(!String.IsNullOrEmpty(path))
+        {
+            if(path!="/")
+            {
+                if (_appState.ContributorId == 0 && path != "login" && path != "register" && path != "edituser" && path != "changepassword")
+                {
+                    _navigationManager.NavigateTo("/");
+                }
+            }
+        }
+    }
+}

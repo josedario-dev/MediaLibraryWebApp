@@ -1,0 +1,201 @@
+﻿@page "/createmedia"
+@using System.Text;
+@using MediaLibrary.WebApp.Core.Enums
+@using MediaLibrary.WebApp.Shared
+@using MediaLibrary.WebApp.Shared.DTOs
+@using MediaLibrary.WebApp.Client.Repositories
+@using MediaLibrary.WebApp.Client.Repositories.Contracts
+@using MediaLibrary.WebApp.Client.Auth
+@using CurrieTechnologies.Razor.SweetAlert2
+@using MediaLibrary.WebApp.Core
+@using MediaLibrary.WebApp.Shared.ClasesConstantes
+@using MudBlazor
+@using Newtonsoft.Json
+@using System.IO;
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@inject ILoginService loginService
+@inject IAppState _appState
+@inject IMudMessagingService _mudMessagingService
+
+
+<MudText Typo="Typo.h4" Class="pa-5">Publicar obra</MudText>
+
+<EditForm Model="@mediaDto" OnValidSubmit="CreteAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField Label="Título" Variant="Variant.Outlined" @bind-Value="mediaDto.Title" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField Lines="10" Label="Descripción" Variant="Variant.Outlined" @bind-Value="mediaDto.Description" />
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect T="int" Label="Tipo de arte" @bind-Value="selectedMediaType" TextChanged="@(() => SelectedMediaTypeChanged())">
+                @foreach (var mediaType in mediaTypes)
+                {
+                    <MudSelectItem T="int" Value="@mediaType.Id">@mediaType.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudDatePicker Label="Fecha de publicación de la obra" @bind-Date="mediaDto.PublicationDate" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudFileUpload Context="filePicker" T="IBrowserFile" FilesChanged="UploadFiles" Accept="@acceptedFiles">
+                <ButtonTemplate>
+                    <MudButton HtmlTag="label"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               for="@filePicker.Id">
+                        Seleccionar archivo
+                    </MudButton>
+                </ButtonTemplate>
+                <SelectedTemplate>
+                    @if (filePicker != null)
+                    {
+                        <br />
+                        <br />
+                        <MudAlert Severity="Severity.Info">@filePicker.Name</MudAlert>
+                    }
+                    else
+                    {
+                        <br />
+                        <MudText>Aún no has seleccionado un archivo</MudText>
+                    }
+                </SelectedTemplate>
+            </MudFileUpload>
+        </MudItem>
+    </MudGrid>
+
+    <br />
+    <br />
+    <br />
+    <MudDivider />
+    <br />
+    <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">Publicar</MudButton>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
+
+    // var authenticationState = await authenticationStateTask;
+    // var isAuthenticated = authenticationState.User.Identity!.IsAuthenticated;
+    // if (isAuthenticated)
+    // {
+    //     var x = authenticationState.User.Identity!.Name;
+    // }
+
+    private MediaDto mediaDto = new();
+    private List<MediaTypeItem> mediaTypes = new List<MediaTypeItem>();
+    private int selectedMediaType;
+    private string acceptedFiles;
+    private long maxFileSize;
+    private string? extension { get; set; } = null;
+    IList<IBrowserFile> files = new List<IBrowserFile>();
+
+    private async void UploadFiles(IBrowserFile file)
+    {
+        try
+        {
+            _mudMessagingService.ShowLoader("Obteniendo archivo...");
+            var stream = file.OpenReadStream(maxFileSize);
+            if (stream != null)
+            {
+                mediaDto.File = await stream.ConvertToBase64();
+                extension = Path.GetExtension(file.Name);
+                mediaDto.Extension = extension;
+            }
+            else
+                mediaDto.File = null;
+        }
+        catch (Exception ex)
+        {
+            _mudMessagingService.HideLoader();
+            _mudMessagingService.ShowAlertError($"Error", ex.Message, "Aceptar");
+        }
+        finally
+        {
+            _mudMessagingService.HideLoader();
+        }
+
+    }
+
+    private void SelectedMediaTypeChanged()
+    {
+        switch ((MediaType)selectedMediaType)
+        {
+            case MediaType.Picture:
+                acceptedFiles = ".png, .jpg, .jpeg, .webp, .gif";
+                maxFileSize = 10000000;
+                mediaDto.MediaType = selectedMediaType;
+                break;
+            case MediaType.Video:
+                acceptedFiles = ".mp4, .avi, .mov, .wmv";
+                maxFileSize = 50000000;
+                mediaDto.MediaType = selectedMediaType;
+                break;
+            case MediaType.Audio:
+                acceptedFiles = ".mp3, .wav, .aac";
+                maxFileSize = 7000000;
+                mediaDto.MediaType = selectedMediaType;
+                break;
+            case MediaType.File:
+                acceptedFiles = "";
+                maxFileSize = 20000000;
+                mediaDto.MediaType = selectedMediaType;
+                break;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        int index = -1;
+        foreach (var mediaType in Enum.GetNames(typeof(MediaType)).ToArray())
+        {
+            index++;
+            string name = Enum.GetName(typeof(MediaType), index);
+
+            mediaTypes.Add(new MediaTypeItem
+                {
+                    Id = index,
+                    Name = mediaType
+                });
+        }
+
+        // Configura el valor inicial para selectedMediaType basado en el parámetro mediaType
+        selectedMediaType = 0;
+
+        mediaDto.MediaType = selectedMediaType;
+        mediaDto.ContributorId = _appState.ContributorId;
+
+        SelectedMediaTypeChanged();
+    }
+
+    private async Task CreteAsync()
+    {
+        _mudMessagingService.ShowLoader("Subiendo...");
+
+
+        var responseHttp = await repository.Post<MediaDto>("/api/media", mediaDto);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            _mudMessagingService.HideLoader();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        _mudMessagingService.HideLoader();
+
+        await sweetAlertService.FireAsync("¡Genial!", "¡Gracias por publicar tu obra de arte!", SweetAlertIcon.Success);
+        navigationManager.NavigateTo("/explore");
+    }
+}

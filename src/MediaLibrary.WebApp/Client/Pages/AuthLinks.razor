@@ -1,0 +1,34 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <MudMenu>
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Filled" Style="background-color:#FFFFFF;color:#000000;">
+                        <MudText Style="margin-right:10px;">@context.User.Identity!.Name?.ToUpper()</MudText>
+                        <MudAvatar Style="background-color:#000000;color:#FFFFFF;">@context.User.Identity!.Name?.ToUpper().FirstOrDefault()</MudAvatar>
+                    </MudButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Href="/EditUser">Editar usuario</MudMenuItem>
+                    <MudMenuItem Href="/changePassword">Cambiar contraseña</MudMenuItem>
+                    <MudMenuItem Href="/logout" Style="color:#b3121d;">Cerrar sesión</MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+        </Authorized>
+        <NotAuthorized>
+            <MudButton Href="Register" Style="color:#FFFFFF;" Variant="Variant.Outlined">Registro</MudButton>
+            <MudButton Href="Login" Style="background-color:#FFFFFF;margin-left:20px;" Variant="Variant.Filled">Iniciar Sesión</MudButton>
+        </NotAuthorized>
+    </AuthorizeView>
+
+
+@code {
+    private string? photoUser;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
+
+    protected async override Task OnParametersSetAsync()
+    {
+        var authenticationState = await authenticationStateTask;
+    }
+}

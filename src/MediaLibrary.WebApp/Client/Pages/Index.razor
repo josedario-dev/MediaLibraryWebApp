@@ -1,0 +1,138 @@
+﻿@page "/explore"
+@using MediaLibrary.WebApp.Core.Enums
+@using MediaLibrary.WebApp.Shared
+@inject HttpClient Http
+@inject IAppState appState
+@inject IMudMessagingService _mudMessagingService
+@inject NavigationManager _navigationManager
+
+<style>
+    body {
+        background-color: #000000;
+    }
+</style>
+
+<PageTitle>Explorar</PageTitle>
+
+@if (string.IsNullOrEmpty(appState.NickName))
+{
+    <MudText Typo="Typo.h3" Style="color:#e0e0e0;">¡HOLA!, Invitado</MudText>
+}
+else
+{
+    <MudText Typo="Typo.h3" Style="color:#e0e0e0;">¡HOLA! @appState.NickName</MudText>
+}
+<br />
+<MudText Typo="Typo.h4" GutterBottom="true" Style="color:#e0e0e0;">Echa un vistazo al arte del mundo de diferentes creadores!</MudText>
+
+<br />
+<br />
+@if (IsLoading)
+{
+    <MudProgressCircular Style="color: #FFFFFF;" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        @foreach (MediaDto media in medias)
+        {
+            <MudItem xs="12" sm="12" md="6" lg="6">
+                <MudCard>
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@media.Contributor.NickName</MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudAvatar>
+                                    <MudImage Src="@media.Contributor.PhotoPath"></MudImage>
+                                </MudAvatar>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.h4" Style="font-weight:bold;">@media.Title</MudText>
+                            <br />
+                            <br />
+                            @switch ((MediaType)media.MediaType)
+                            {
+                                case MediaType.Picture:
+                                    <MudImage ObjectFit="ObjectFit.Cover" Height="300" Src="@media.FilePath" Alt="@media.Title" Elevation="25" Class="rounded-lg" />
+                                    break;
+                                case MediaType.Audio:
+                                    <MudIcon Icon="@Icons.Material.Filled.AudioFile" Style="font-size: 8rem;" />
+                                    break;
+                                case MediaType.File:
+                                    <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Style="font-size: 8rem;" />
+                                    break;
+                                case MediaType.Video:
+                                    <MudIcon Icon="@Icons.Material.Filled.Videocam" Style="font-size: 8rem;" />
+                                    break;
+                            }
+                        <MudText Typo="Typo.h5">Descripción</MudText>
+                        <MudText>@media.Description</MudText>
+                        </MudCardContent>
+
+                        <MudCardActions>
+
+                            <MudChip Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Info">@media.PublicationDate?.ToString("dd MMM, yyyy")</MudChip>
+                            <MudSpacer />
+                            <MudButton Variant="Variant.Text" Style="background-color:#000000;color:#FFFFFF;" OnClick="@(() => DownloadArt(media.FilePath))">Descargar</MudButton>
+
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+        }
+    </MudGrid>
+}
+
+@code
+{
+    private bool IsLoading;
+    private List<MediaDto> medias = new List<MediaDto>();
+
+
+    protected override void OnInitialized()
+    {
+        LoadData();
+    }
+
+    private void DownloadArt(string filePath)
+    {
+        try
+        {
+            _mudMessagingService.ShowLoader("Descargando archivo ...");
+            _navigationManager.NavigateTo(filePath, forceLoad: true);
+        }
+        catch (Exception)
+        {
+            _mudMessagingService.HideLoader();
+            _mudMessagingService.ShowAlertError("Error","No se pudo descargar el archivo...","Aceptar");
+        }
+        finally
+        {
+            _mudMessagingService.HideLoader();
+        }
+    }
+
+    private async void LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+            var response = await Http.GetFromJsonAsync<List<MediaDto>>("api/media");
+            if (response != null)
+            {
+                medias = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar las excepciones
+            _mudMessagingService.ShowAlertError("Cargando registros", $"Error al cargar los registros {ex.InnerException} {ex.InnerException.Message}", "Aceptar");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+}

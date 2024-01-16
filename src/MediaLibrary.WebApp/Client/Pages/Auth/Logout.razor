@@ -1,0 +1,21 @@
+﻿@page "/logout"
+@using MediaLibrary.WebApp.Shared
+@inject IAppState _appState
+@inject ILoginService loginService
+@inject NavigationManager navigationManager
+
+<p>Cerrando sesión...</p>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await loginService.LogoutAsync();
+
+        _appState.ContributorId = 0;
+        _appState.ProfileId = string.Empty;
+        _appState.NickName = string.Empty;
+        _appState.Photo = string.Empty;
+
+        navigationManager.NavigateTo("/");
+    }
+}

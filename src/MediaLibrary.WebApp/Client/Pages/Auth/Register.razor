@@ -1,0 +1,146 @@
+﻿@page "/Register"
+@using MediaLibrary.WebApp.Shared.DTOs
+@using MediaLibrary.WebApp.Client.Repositories
+@using MediaLibrary.WebApp.Client.Repositories.Contracts
+@using MediaLibrary.WebApp.Client.Auth
+@using CurrieTechnologies.Razor.SweetAlert2
+@using MediaLibrary.WebApp.Core
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@inject ILoginService loginService
+@using MudBlazor
+@using Newtonsoft.Json
+
+@using System.Text;
+
+<h3>Registrar Nuevo Usuario</h3>
+
+Thanks, tell me, this .razor, lo quiero poner la foto a un lado derecho de los campos de texto:
+
+<EditForm Model="@userDto" OnValidSubmit="CreteUserAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField Label="Nombre" @bind-Value="userDto.FirstName" />
+            <MudTextField Label="Email" @bind-Value="userDto.Email" />
+            <MudAutocomplete T="CountryDto"
+                             Label="País"
+                             ToStringFunc="@(item => $"{item.Id} - {item.Name}")"
+                             SearchFunc="@SearchCountry"
+                             @bind-Value="@selectedCountryDto">
+            </MudAutocomplete>
+            <MudTextField Label="Contraseña:" Type="Password" @bind-Value="userDto.Password" FullWidth />
+             <MudTextField Label="Confirmación de contraseña:" Type="Password" @bind-Value="userDto.PasswordConfirm" FullWidth />
+         </MudItem>
+         <MudItem xs="12" md="6">
+             <div class="mb-3">
+                 <InputImg Label="Foto" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
+             </div>
+             @if (!string.IsNullOrEmpty(userDto.Photo))
+            {
+                <MudAvatar Src="@userDto.Photo" Size="Size.Small" Class="mx-2" Style="border-radius: 50%;" />
+            }
+        </MudItem>
+    </MudGrid>
+
+    <div class="mud-button-row">
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Guardar</MudButton>
+        <MudButton ButtonType="ButtonType.Button" Color="Color.Secondary" OnClick="HandleCancel">Cancelar</MudButton>
+    </div>
+</EditForm>
+
+
+@code {
+    private UserDto userDto = new();
+    private List<Country>? countries;
+    private int selectedCountryId;
+    private string? imageUrl;
+
+    private async Task<IEnumerable<CountryDto>> SearchCountry(string? searchString)
+    {
+        var response = await Http.GetAsync("api/Countries");
+        if (response.IsSuccessStatusCode)
+        {
+            var countries0 = await response.Content.ReadFromJsonAsync<List<CountryDto>>();
+
+            // Solo filtra en la carga inicial
+            if (searchString == null)
+                _selectedCountryDto = countries0.Where(t => t.Id == userDto.CountryId).FirstOrDefault();
+            // Devuelve toda la lista para que el usuario seleccione
+            return countries0 ?? new List<CountryDto>();
+        }
+        return new List<CountryDto>();
+    }
+
+    private CountryDto selectedCountryDto
+    {
+        get => _selectedCountryDto;
+        set
+        {
+            if (_selectedCountryDto != value)
+            {
+                _selectedCountryDto = value;
+                userDto.CountryId = value?.Id ?? 0;
+            }
+        }
+    }
+    private CountryDto _selectedCountryDto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCountriesAsync();
+
+        if (!string.IsNullOrEmpty(userDto.Photo))
+        {
+            imageUrl = userDto.Photo;
+            userDto.Photo = null;
+        }
+    }
+
+    private void ImageSelected(string imagenBase64)
+    {
+        userDto.Photo = imagenBase64;
+        imageUrl = null;
+    }
+
+    private async Task CreteUserAsync()
+    {
+        userDto.CountryId = selectedCountryDto.Id;
+        userDto.UserName = userDto.Email;
+        userDto.UserType = Core.Enums.UserType.User;
+
+        var responseHttp = await repository.Post<UserDto, TokenDto>("/api/accounts/CreateUser", userDto);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        await loginService.LoginAsync(responseHttp.Response!.Token);
+        navigationManager.NavigateTo("/");
+    }
+
+    private async Task LoadCountriesAsync()
+    {
+        var responseHttp = await repository.Get<List<Country>>("/api/Countries/combo");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        countries = responseHttp.Response;
+    }
+
+    private void HandleCancel()
+    {
+        // Redirige al usuario a la página deseada al hacer clic en cancelar
+        NavigationManager.NavigateTo($"/");
+    }
+}

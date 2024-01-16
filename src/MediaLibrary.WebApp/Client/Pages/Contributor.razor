@@ -1,0 +1,171 @@
+﻿@page "/contributor/{id:int}"
+@using Microsoft.Extensions.Logging;
+@using MudBlazor
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IMudMessagingService _mudMessagingService
+@using Newtonsoft.Json
+@using System.Text;
+
+
+<EditForm Model="@contributorDto" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudTextField Label="Nombre" @bind-Value="contributorDto.NickName" />
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudDatePicker Label="Fecha nacimiento" @bind-Date="contributorDto.DateOfBirth" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField Label="Biografía" @bind-Value="contributorDto.Biography" />
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudTextField Label="Foto" @bind-Value="contributorDto.PhotoPath" />
+        </MudItem>
+
+    </MudGrid>
+
+    <div class="mud-button-row">
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Guardar</MudButton>
+        <MudButton ButtonType="ButtonType.Button" Color="Color.Secondary" OnClick="HandleCancel">Cancelar</MudButton>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+
+    private ContributorDto? contributorDto = new ContributorDto();
+
+    // Este método se llama cuando los parámetros del componente se han establecido
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadSqlServerSourceClientDto();
+    }
+
+    private async Task LoadSqlServerSourceClientDto()
+    {
+        if (id != 0)
+        {
+            // Modificación de registros
+            Http.DefaultRequestHeaders.Clear();
+            try
+            {
+                var response = await Http.GetAsync($"api/Contributors/{id}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Manejar la respuesta no exitosa, como registrar el error o mostrar un mensaje
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new InvalidOperationException($"Error en la solicitud: {errorContent}");
+                }
+                contributorDto = await response.Content.ReadFromJsonAsync<ContributorDto>();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        else
+            contributorDto = new ContributorDto { };
+    }
+
+
+    private async Task<IEnumerable<int>> SearchContributor(string searchString)
+    {
+
+        // Convertir la búsqueda de string a long si es posible
+        if (long.TryParse(searchString, out long id))
+        {
+            // Realizar la búsqueda basada en el ID
+            Http.DefaultRequestHeaders.Clear();
+            Http.DefaultRequestHeaders.Add("id", searchString);
+            var response = await Http.GetAsync($"api/Countries");
+            if (response.IsSuccessStatusCode)
+            {
+                // Suponiendo que el API devuelve una lista de IDs
+                List<int> countriesIds = new List<int>();
+                var countries = await response.Content.ReadFromJsonAsync<List<CountryDto>>();
+                foreach (var item in countries)
+                {
+                    countriesIds.Add(item.Id);
+                }
+                return countriesIds;
+            }
+        }
+
+        return Enumerable.Empty<int>();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Aquí se implementará la lógica para manejar el envío del formulario
+        if (id != 0)
+        {
+            // Modificación
+            var json = JsonConvert.SerializeObject(contributorDto);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Enviar la solicitud PUT
+            var response = await Http.PutAsync($"api/Contributors/{id}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo($"/contributors");
+            }
+            else
+            {
+                // Manejar errores, por ejemplo, mostrar un mensaje al usuario
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+            }
+        }
+        else
+        {
+            // Adición
+            var json = JsonConvert.SerializeObject(contributorDto);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Enviar la solicitud PUT
+            try
+            {
+                var response = await Http.PostAsync($"api/Contributors", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    NavigationManager.NavigateTo($"/contributors");
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    _mudMessagingService.ShowAlertError("Insertando", $"Falló la inserción, es posible que el registro ya exista, o el servidor no está disponible. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+    }
+
+    private void HandleCancel()
+    {
+        // Redirige al usuario a la página deseada al hacer clic en cancelar
+        NavigationManager.NavigateTo($"/contributors");
+    }
+
+    private bool passwordVisibility = false;
+    private InputType passwordInput = InputType.Password;
+    private string passwordIcon = Icons.Material.Filled.VisibilityOff;
+
+    // This method toggles the password visibility
+    private void TogglePasswordVisibility()
+    {
+        passwordVisibility = !passwordVisibility;
+        passwordInput = passwordVisibility ? InputType.Text : InputType.Password;
+        passwordIcon = passwordVisibility ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
+    }
+}

@@ -1,0 +1,33 @@
+﻿@using MudBlazor;
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icon" Color="@Color" Class="mr-3 mb-n1" />
+            @TitleText
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText>@MessageText</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="Submit">@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string Icon { get; set; }
+
+    [Parameter] public string TitleText { get; set; }
+
+    [Parameter] public string MessageText { get; set; }
+
+    [Parameter] public string ButtonText { get; set; }
+
+    [Parameter] public Color Color { get; set; }
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+}

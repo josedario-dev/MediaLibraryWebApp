@@ -1,0 +1,173 @@
+﻿@page "/EditUser"
+@using CurrieTechnologies.Razor.SweetAlert2
+@using MediaLibrary.WebApp.Client.Auth
+@using MediaLibrary.WebApp.Client.Repositories.Contracts
+@inject HttpClient Http
+@inject IMudMessagingService _mudMessagingService
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@inject ILoginService loginService
+
+@if (user is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <EditForm Model="user" OnValidSubmit="SaveUserAsync">
+        <MudDataAnnotationsValidator />
+
+        <MudCard>
+            <MudCardHeader>
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6">Editar Usuario</MudText>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" Href="/changePassword">
+                            <MudIcon Icon="@Icons.Material.Filled.VpnKey" /> Cambiar Contraseña
+                        </MudButton>
+                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="mx-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Check" /> Guardar Cambios
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Nombres:" @bind-Value="@user.FirstName" FullWidth />
+                     </MudItem>
+                     <MudItem xs="12" md="6">
+                         <MudItem xs="12" md="6">
+                             <MudAutocomplete T="CountryDto"
+                                              Label="País"
+                                              ToStringFunc="@(item => $"{item.Id} - {item.Name}")"
+                                              SearchFunc="@SearchCountry"
+                                              @bind-Value="@selectedCountry">
+                             </MudAutocomplete>
+                         </MudItem>
+                        <MudFormComponent Class="mb-2" >
+                            <InputImg Label="Foto perfil" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
+                        </MudFormComponent>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    </EditForm>
+
+}
+
+@code {
+    private User? user;
+    private List<Country>? countries;
+    private string? imageUrl;
+
+
+    private async Task CountryChangedAsync(ChangeEventArgs e)
+    {
+        var selectedCountry = Convert.ToInt32(e.Value!);
+
+        if (user != null)
+            user.CountryId = selectedCountry;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserAsyc();
+        await SearchCountry(null);
+
+        if (!string.IsNullOrEmpty(user!.Photo))
+        {
+            imageUrl = user.Photo;
+            user.Photo = null;
+        }
+
+    }
+
+    private async Task LoadUserAsyc()
+    {
+        var responseHTTP = await repository.Get<User>($"/api/accounts");
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/");
+                return;
+            }
+            var messageError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", messageError, SweetAlertIcon.Error);
+            return;
+        }
+        user = responseHTTP.Response;
+    }
+
+    private void ImageSelected(string imagenBase64)
+    {
+        user!.Photo = imagenBase64;
+        imageUrl = null;
+    }
+
+    private async Task LoadCountriesAsync()
+    {
+        var responseHttp = await repository.Get<List<Country>>("/api/countries/combo");
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        countries = responseHttp.Response;
+    }
+
+    private async Task<IEnumerable<CountryDto>> SearchCountry(string? searchString)
+    {
+        var response = await Http.GetAsync("api/Countries");
+        if (response.IsSuccessStatusCode)
+        {
+            var countries0 = await response.Content.ReadFromJsonAsync<List<CountryDto>>();
+
+            // Solo filtra en la carga inicial
+            if (searchString == null)
+                _selectedCountry = countries0.Where(t => t.Id == user.CountryId).FirstOrDefault();
+            // Devuelve toda la lista para que el usuario seleccione
+            return countries0 ?? new List<CountryDto>();
+        }
+        return new List<CountryDto>();
+    }
+
+    private CountryDto selectedCountry
+    {
+        get => _selectedCountry;
+        set
+        {
+            if (_selectedCountry != value)
+            {
+                _selectedCountry = value;
+                user.CountryId = value?.Id ?? 0;
+            }
+        }
+    }
+    private CountryDto _selectedCountry;
+
+
+    private async Task SaveUserAsync()
+    {
+        _mudMessagingService.ShowLoader("Grabando");
+
+        var responseHttp = await repository.Put<User>("/api/accounts", user!);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            _mudMessagingService.HideLoader();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+
+        _mudMessagingService.HideLoader();
+
+        navigationManager.NavigateTo("/");
+    }
+}

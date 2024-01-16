@@ -1,0 +1,92 @@
+﻿@page "/countries"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject IMudMessagingService _mudMessagingService
+@attribute [Authorize(Roles = "Admin")]
+
+@if (IsLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudDataGrid @ref="dataGrid" MultiSelection="false" Items="@countries" Filterable="true"
+                 Hideable="true">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Países</MudText>
+            <MudSpacer />
+            <MudTooltip Text="Agregar">
+                <MudIconButton Size="@Size.Small" OnClick="() => OpenCountry(new CountryDto())" Icon="@Icons.Material.Outlined.Add" />
+            </MudTooltip>
+        </ToolBarContent>
+        <Columns>
+            <PropertyColumn Property="x => x.Id" Title="Id" />
+            <PropertyColumn Property="x => x.Name" Title="País" />
+            <TemplateColumn T="CountryDto" Title="Acciones">
+                <CellTemplate>
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit" OnClick="() => OpenCountry(context.Item)" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Delete" OnClick="() => DeleteCountry(context.Item)" />
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+
+        <PagerContent>
+            <MudDataGridPager T="CountryDto" />
+        </PagerContent>
+    </MudDataGrid>
+}
+
+@code {
+    private bool IsLoading { get; set; }
+    private List<CountryDto> countries = new List<CountryDto>();
+    private MudDataGrid<CountryDto>? dataGrid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        IsLoading = true;
+        await LoadCountries();
+        IsLoading = false;
+    }
+
+    private async Task LoadCountries()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<CountryDto>>("api/Countries");
+            if (response != null)
+            {
+                countries = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            _mudMessagingService.ShowAlertError("Cargando países", $"Error al cargar los países: {ex.InnerException}", "Aceptar");
+        }
+    }
+
+    private void OpenCountry(CountryDto country)
+    {
+        // Implementar lógica para abrir el formulario de país
+        NavigationManager.NavigateTo($"/country/{country.Id}");
+    }
+
+    private async Task DeleteCountry(CountryDto country)
+    {
+        // Implementar lógica para eliminar país
+        _mudMessagingService.ShowLoader("Eliminando país...");
+        var response = await Http.DeleteAsync($"api/Countries/{country.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadCountries();
+        }
+        else
+        {
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            _mudMessagingService.ShowAlertError("Eliminando", $"No se pudo eliminar el país: {errorMessage}", "Aceptar");
+        }
+    }
+}

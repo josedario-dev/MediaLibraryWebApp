@@ -1,0 +1,39 @@
+﻿@using MudBlazor;
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @*<MudIcon Icon="@Icon" Color="@Color" Class="mr-3 mb-n1" />*@
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Dark" OnClick="@Cancel" />
+            @TitleText
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <DynamicComponent Type="@DialogName" Parameters="@AditionalParameters" />
+    </DialogContent>
+@*    <DialogActions>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Cancel">@CancelButtonText</MudButton>
+        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="Submit">@AcceptButtonText</MudButton>
+    </DialogActions>*@
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    //[Parameter] public string Icon { get; set; }
+
+    [Parameter] public string TitleText { get; set; }
+
+    [Parameter] public Type DialogName { get; set; }
+
+    [Parameter] public string CancelButtonText { get; set; }
+
+    [Parameter] public string AcceptButtonText { get; set; }
+
+    [Parameter] public Color Color { get; set; }
+
+    [Parameter] public Dictionary<string, object> AditionalParameters { get; set; }
+
+    //void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+}

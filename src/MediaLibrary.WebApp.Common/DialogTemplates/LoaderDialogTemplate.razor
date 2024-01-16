@@ -1,0 +1,18 @@
+﻿@using MudBlazor;
+
+<MudDialog DisableSidePadding="true">
+    <DialogContent>
+        <MudStack Row="true" Spacing="5" Class="pa-3">
+            <MudProgressCircular Class="align-self-center" StrokeWidth="4" Color="Color.Primary" Indeterminate="true" />
+            <MudText Typo="Typo.h5" Class="align-self-center">@ContentText</MudText>
+        </MudStack>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string ContentText { get; set; }
+
+    [Parameter] public Color Color { get; set; }
+}
