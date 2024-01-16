@@ -1,6 +1,7 @@
 ﻿@page "/explore"
 @using MediaLibrary.WebApp.Core.Enums
 @using MediaLibrary.WebApp.Shared
+@using Newtonsoft.Json
 @inject HttpClient Http
 @inject IAppState appState
 @inject IMudMessagingService _mudMessagingService
@@ -14,6 +15,7 @@
 
 <PageTitle>Explorar</PageTitle>
 
+
 @if (string.IsNullOrEmpty(appState.NickName))
 {
     <MudText Typo="Typo.h3" Style="color:#e0e0e0;">¡HOLA!, Invitado</MudText>
@@ -24,6 +26,15 @@ else
 }
 <br />
 <MudText Typo="Typo.h4" GutterBottom="true" Style="color:#e0e0e0;">Echa un vistazo al arte del mundo de diferentes creadores!</MudText>
+<br/>
+<MudPaper Class="d-flex align-start justify-start mud-width-full">
+    ...
+    <MudTextField Placeholder="Buscar..." @bind-Value="searchText" Class="ma-5"
+                  OnKeyPress="@HandleKeyPress" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="align-self-center ma-5"
+               OnClick="@(() => LoadData(searchText))">Buscar</MudButton>
+</MudPaper>
+
 
 <br />
 <br />
@@ -88,7 +99,46 @@ else
 {
     private bool IsLoading;
     private List<MediaDto> medias = new List<MediaDto>();
+    private string searchText = string.Empty;
 
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Key == "Enter")
+        {
+            LoadData(searchText);
+        }
+    }
+
+    private async void LoadData(string search = "")
+    {
+        // Filtrar los resultados según el texto de búsqueda
+        string json = JsonConvert.SerializeObject(medias);
+        List<MediaDto> clonedList = JsonConvert.DeserializeObject<List<MediaDto>>(json);
+        if (!String.IsNullOrEmpty(search))
+            search = search.ToLower();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var medias0 = clonedList.Where(c => c.Description.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+            if(medias0 == null || medias0.Count()==0)
+            {
+                medias0 = clonedList.Where(c => c.Title.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (medias0 != null && medias0.Count > 0)
+                    medias = medias0;
+            }
+            else
+            {
+                if (medias0 == null)
+                    LoadData();
+                else
+                    medias = medias0;
+            }
+
+        }
+        else
+            LoadData();
+
+        StateHasChanged();
+    }
 
     protected override void OnInitialized()
     {

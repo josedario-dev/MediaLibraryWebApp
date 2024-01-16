@@ -4,6 +4,8 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Logging;
 @using System.Text
+@using Newtonsoft
+@using Newtonsoft.Json
 @inject HttpClient Http
 @inject NavigationManager _navigationManager
 @inject IAppState _appState
@@ -14,6 +16,11 @@
 
 <AuthorizeView>
     <Authorized>
+        <MudPaper Class="d-flex align-start justify-start mud-width-full">
+            ...
+            <MudTextField Placeholder="Buscar..." @bind-Value="searchText" Class="ma-5" OnKeyPress="@HandleKeyPress" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="align-self-center ma-5" OnClick="@(() => LoadData(searchText))">Buscar</MudButton>
+        </MudPaper>
         <MudStack Style="height:100%;" Class="bg-city pa-8">
             <MudPaper Class="d-flex align-start justify-start mud-width-full">
                 <MudText Typo="Typo.h4" Class="pa-5">Mis perfiles de autor</MudText>
@@ -41,23 +48,23 @@
                                     <MudCardHeader>
                                         <CardHeaderContent>
                                             <MudText Typo="Typo.h6">@contributor.NickName</MudText>
-                                        </CardHeaderContent>
-                                        <CardHeaderActions>
+                                            </CardHeaderContent>
+                                            <CardHeaderActions>
                                                 <MudAvatar>
                                                     <MudImage Src="@contributor.PhotoPath"></MudImage>
                                                 </MudAvatar>
-                                        </CardHeaderActions>
-                                    </MudCardHeader>
-                                    <MudCardContent>
-                                        <MudText>Biografía</MudText>
-                                        <MudText>@contributor.Biography</MudText>
-                                    </MudCardContent>
-                                    <MudCardActions>
-                                        <MudSpacer />
+                                            </CardHeaderActions>
+                                        </MudCardHeader>
+                                        <MudCardContent>
+                                            <MudText>Biografía</MudText>
+                                            <MudText>@contributor.Biography</MudText>
+                                        </MudCardContent>
+                                        <MudCardActions>
+                                            <MudSpacer />
                                             <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => Continue(contributor.Id, contributor.NickName, contributor.PhotoPath, contributor.ProfileId))">Seleccionar</MudButton>
-                                    </MudCardActions>
-                                </MudCard>
-                            </MudItem>
+                                        </MudCardActions>
+                                    </MudCard>
+                                </MudItem>
                         }
                     </MudGrid>
                 }
@@ -115,6 +122,55 @@
     private ContributorDto ContributorInfo = new();
     private List<ContributorDto> contributors = new List<ContributorDto>();
     private DialogOptions dialogOptions = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Large };
+    private string searchText = string.Empty;
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Key == "Enter")
+        {
+            LoadData(searchText);
+        }
+    }
+
+    private async void LoadData(string search = "")
+    {
+        // Lógica existente para cargar datos...
+        string json = JsonConvert.SerializeObject(contributors);
+        List<ContributorDto> clonedList = JsonConvert.DeserializeObject<List<ContributorDto>>(json);
+        if (!String.IsNullOrEmpty(search))
+            search = search.ToLower();
+        // Filtrar los resultados según el texto de búsqueda
+        if (!string.IsNullOrWhiteSpace(search))
+            contributors = contributors.Where(c => c.NickName.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+        else
+            LoadData();
+
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            // Se busca en una lista clonada, para no dañar las cargas actuales
+            var filteredList = clonedList.Where(c => c.NickName.ToLower().Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (filteredList == null || filteredList.Count() == 0)
+            {
+                filteredList = clonedList.Where(c => c.Biography.ToLower().Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (filteredList != null && filteredList.Count > 0)
+                    contributors = filteredList;
+            }
+            else
+            {
+                if (filteredList == null)
+                    LoadData();
+                else
+                    contributors = filteredList;
+            }
+
+        }
+        else
+            LoadData();
+
+
+        StateHasChanged();
+    }
 
     // Se ejecuta cuándo el componente está listo
     protected override async Task OnInitializedAsync()
