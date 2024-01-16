@@ -33,10 +33,7 @@ App para subir obras musicales, videos, imágenes y obras de literatura
 ## Contribución
 MudBlazor Community
 Microsoft
-Juan Zuluaga: Zulu55
-Camilo Alzate 
-Estyfen Alzate
-Johan Alzate
+Azure
 
 
 ## Licencia
