@@ -18,7 +18,6 @@
 
 <h3>Registrar Nuevo Usuario</h3>
 
-Thanks, tell me, this .razor, lo quiero poner la foto a un lado derecho de los campos de texto:
 
 <EditForm Model="@userDto" OnValidSubmit="CreteUserAsync">
     <DataAnnotationsValidator />
@@ -34,17 +33,12 @@ Thanks, tell me, this .razor, lo quiero poner la foto a un lado derecho de los c
                              SearchFunc="@SearchCountry"
                              @bind-Value="@selectedCountryDto">
             </MudAutocomplete>
-            <MudTextField Label="Contraseña:" Type="Password" @bind-Value="userDto.Password" FullWidth />
-             <MudTextField Label="Confirmación de contraseña:" Type="Password" @bind-Value="userDto.PasswordConfirm" FullWidth />
-         </MudItem>
-         <MudItem xs="12" md="6">
-             <div class="mb-3">
-                 <InputImg Label="Foto" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
-             </div>
-             @if (!string.IsNullOrEmpty(userDto.Photo))
-            {
-                <MudAvatar Src="@userDto.Photo" Size="Size.Small" Class="mx-2" Style="border-radius: 50%;" />
-            }
+            <MudTextField Label="Contraseña:" InputType="InputType.Password" @bind-Value="userDto.Password" FullWidth />
+            <MudTextField Label="Confirmación de contraseña:" InputType="InputType.Password" @bind-Value="userDto.PasswordConfirm" FullWidth />
+
+            <div class="mb-3">
+                <InputImg Label="Foto" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
+            </div>
         </MudItem>
     </MudGrid>
 

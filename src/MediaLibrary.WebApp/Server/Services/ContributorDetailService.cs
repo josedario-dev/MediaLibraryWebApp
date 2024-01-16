@@ -3,20 +3,29 @@ using Microsoft.EntityFrameworkCore;
 using MediaLibrary.WebApp.Server.Services;
 using MediaLibrary.WebApp.Server.Services.Contracts;
 using MediaLibrary.WebApp.Server.Data;
+using MediaLibrary.WebApp.Client.Pages;
+using Org.BouncyCastle.Tls;
+using MediaLibrary.WebApp.Core;
+using MediaLibrary.WebApp.Core.Enums;
 
 namespace MediaLibrary.WebApp.Server.Services
 {
     public class ContributorDetailService : IContributorDetailService
     {
-        DataContext _context;  
+        DataContext _context;
         public ContributorDetailService(DataContext context)
         {
-                _context = context;
+            _context = context;
         }
 
-        public async Task<List<ContributorDto>> GetDtoAllAsync(string userId)
+        public async Task<List<ContributorDto>> GetDtoAllAsync(string? userId, UserType userType)
         {
-            var regs = await (from reg in _context.Contributor.Where(c => c.AccountId == userId) select reg).ToListAsync();
+            List<Core.Entities.Contributor> regs = null;
+            if(userType == UserType.Admin)
+                regs = await _context.Contributor.ToListAsync();
+            else
+                regs = await _context.Contributor.Where(t=>t.AccountId == userId).ToListAsync();
+
             List<ContributorDto> result = new List<ContributorDto>();
             foreach (var reg in regs)
             {

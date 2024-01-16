@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using MediaLibrary.WebApp.Server.Helpers.Contracts;
 using MediaLibrary.WebApp.Server.Helpers;
+using MediaLibrary.WebApp.Core;
 
 namespace MediaLibrary.WebApp.Server.Controllers
 {
@@ -46,7 +47,7 @@ namespace MediaLibrary.WebApp.Server.Controllers
                     return NotFound();
                 }
 
-                var items = await _contributorDetailService.GetDtoAllAsync(user.Id);
+                var items = await _contributorDetailService.GetDtoAllAsync(user.Id, user.UserType);
                 return Ok(items);
             }
             catch (InvalidByteRangeException ex)

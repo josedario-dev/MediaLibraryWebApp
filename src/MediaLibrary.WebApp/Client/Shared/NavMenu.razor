@@ -6,7 +6,6 @@
 @using System.Text;
 
 <MudNavMenu>
-    @* <MudNavLink Href="/Counter" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Numbers">Counter</MudNavLink> *@
     <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">Contenido</MudText>
     <MudDivider Class="my-2" />
     <MudNavLink Href="/explore" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Explora</MudNavLink>
@@ -19,15 +18,4 @@
             <MudNavLink Href="/countries" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FlagCircle">Paises</MudNavLink>
         </Authorized>
     </AuthorizeView>
-
-    <MudPaper Width="250px" Class="d-inline-flex py-3" Elevation="0">
-@*         <MudNavMenu Class="mud-width-full">
-            <MudDivider Class="my-2" />
-            <MudNavGroup Title="Consultar" Icon="@Icons.Material.Filled.PermMedia" Expanded="true">
-                <MudNavLink Href="/contributors" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.People" IconColor="Color.Success">Autores</MudNavLink>
-            </MudNavGroup>
-            <MudNavLink Href="/2" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Chat">Chat</MudNavLink>
-        </MudNavMenu> *@
-    </MudPaper>
-    
 </MudNavMenu>
