@@ -54,7 +54,6 @@
         if (id != 0)
         {
             // Modificación de registros
-            Http.DefaultRequestHeaders.Clear();
             try
             {
                 var response = await Http.GetAsync($"api/Contributors/{id}");
