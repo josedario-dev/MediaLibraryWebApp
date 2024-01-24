@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MediaLibrary.WebApp.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialDB : Migration
+    public partial class X : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,12 +33,9 @@ namespace MediaLibrary.WebApp.Server.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     NickName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Nationality = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Biography = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PhotoPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ArtisticRole = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     RegisteredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     AccountId = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -60,19 +57,6 @@ namespace MediaLibrary.WebApp.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MediaType",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MediaType", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -91,6 +75,30 @@ namespace MediaLibrary.WebApp.Server.Migrations
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Media",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    MediaType = table.Column<int>(type: "int", nullable: false),
+                    ContributorId = table.Column<int>(type: "int", nullable: true),
+                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PublicationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Media", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Media_Contributor_ContributorId",
+                        column: x => x.ContributorId,
+                        principalTable: "Contributor",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -124,41 +132,6 @@ namespace MediaLibrary.WebApp.Server.Migrations
                         name: "FK_AspNetUsers_Country_CountryId",
                         column: x => x.CountryId,
                         principalTable: "Country",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Media",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    MediaTypeId = table.Column<int>(type: "int", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ContributorId = table.Column<int>(type: "int", nullable: true),
-                    Summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PublicationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Genre = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AdditionalInformation = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ImagePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreateUser = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UpdateUser = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Media", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Media_Contributor_ContributorId",
-                        column: x => x.ContributorId,
-                        principalTable: "Contributor",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Media_MediaType_MediaTypeId",
-                        column: x => x.MediaTypeId,
-                        principalTable: "MediaType",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -296,11 +269,6 @@ namespace MediaLibrary.WebApp.Server.Migrations
                 name: "IX_Media_ContributorId",
                 table: "Media",
                 column: "ContributorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Media_MediaTypeId",
-                table: "Media",
-                column: "MediaTypeId");
         }
 
         /// <inheritdoc />
@@ -332,9 +300,6 @@ namespace MediaLibrary.WebApp.Server.Migrations
 
             migrationBuilder.DropTable(
                 name: "Contributor");
-
-            migrationBuilder.DropTable(
-                name: "MediaType");
 
             migrationBuilder.DropTable(
                 name: "Country");

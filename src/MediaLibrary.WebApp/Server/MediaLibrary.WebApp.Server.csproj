@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<!--Id único para el encriptado de datos-->
-		<UserSecretsId>DE1C251E-2361-4782-8296-C807C4021884</UserSecretsId>
+		<UserSecretsId>DE1C251E-2361-4782-8296-C807C4021885</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -37,6 +37,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Context\" />
+	  <Folder Include="Migrations\" />
 	</ItemGroup>
 
 

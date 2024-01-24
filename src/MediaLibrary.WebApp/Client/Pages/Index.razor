@@ -25,7 +25,7 @@ else
     <MudText Typo="Typo.h3" Style="color:#e0e0e0;">¡HOLA! @appState.NickName</MudText>
 }
 <br />
-<MudText Typo="Typo.h4" GutterBottom="true" Style="color:#e0e0e0;">Echa un vistazo al arte del mundo de diferentes creadores!</MudText>
+<MudText Typo="Typo.h4" GutterBottom="true" Style="color:#e0e0e0;">Echa un vistazo al arte de diferentes creadores del mundo!</MudText>
 <br/>
 <MudPaper Class="d-flex align-start justify-start mud-width-full">
     ...
@@ -168,7 +168,7 @@ else
         try
         {
             IsLoading = true;
-            var response = await Http.GetFromJsonAsync<List<MediaDto>>("api/media");
+            var response = await Http.GetFromJsonAsync<List<MediaDto>>("api/Media");
             if (response != null)
             {
                 medias = response;

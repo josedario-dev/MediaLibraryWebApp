@@ -9,11 +9,9 @@ namespace MediaLibrary.WebApp.Shared
     public interface IAppState
     {
         int ContributorId { get; set; }
-
+        string ProfileId { get; set; }
         string? NickName { get; set; }
         string? Photo { get; set; }
-
-        string ProfileId { get; set; }
 
         event Action OnCompanySelected;
     }

@@ -47,7 +47,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // Agregar el context EntityFrameworkCore  de la aplicación
 builder.Services.AddDbContext<DataContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString, providerOptions => providerOptions.EnableRetryOnFailure()));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -152,21 +152,23 @@ else
     app.UseHsts();
 }
 
+
+
+app.UseHttpsRedirection();
+
+
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
+
 app.UseCors(x => x
     .AllowAnyMethod()
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true)
     .AllowCredentials());
 
-app.UseHttpsRedirection();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-
-
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
-
-app.UseRouting();
 
 var supportedCultures = new[] { "en-US", "es-ES", "fr-FR" }; // ... otros idiomas
 var localizationOptions = new RequestLocalizationOptions()
@@ -177,15 +179,9 @@ var localizationOptions = new RequestLocalizationOptions()
 
 app.MapRazorPages();
 app.MapControllers();
-app.UseCors(x => x
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .SetIsOriginAllowed(origin => true)
-    .AllowCredentials());
 
 app.MapFallbackToFile("index.html");
 
-app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

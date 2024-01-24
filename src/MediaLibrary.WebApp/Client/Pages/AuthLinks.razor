@@ -1,9 +1,11 @@
-﻿<AuthorizeView>
+﻿@using MudBlazor
+
+<AuthorizeView>
     <Authorized>
         <MudMenu>
-                <ActivatorContent>
-                    <MudButton Variant="Variant.Filled" Style="background-color:#FFFFFF;color:#000000;">
-                        <MudText Style="margin-right:10px;">@context.User.Identity!.Name?.ToUpper()</MudText>
+            <ActivatorContent>
+                <MudButton Variant="Variant.Filled" Style="background-color:#FFFFFF;color:#000000;">
+                    <MudText Style="margin-right:10px;">@context.User.Identity!.Name?.ToUpper()</MudText>
                         <MudAvatar Style="background-color:#000000;color:#FFFFFF;">@context.User.Identity!.Name?.ToUpper().FirstOrDefault()</MudAvatar>
                     </MudButton>
                 </ActivatorContent>
@@ -15,17 +17,25 @@
             </MudMenu>
         </Authorized>
         <NotAuthorized>
+        @if (js)
+        {
+            <MudButton Href="html/registerPage.html" Style="color:#FFFFFF;" Variant="Variant.Outlined">Registro</MudButton>
+        }
+        else
+        {
             <MudButton Href="Register" Style="color:#FFFFFF;" Variant="Variant.Outlined">Registro</MudButton>
-            <MudButton Href="Login" Style="background-color:#FFFFFF;margin-left:20px;" Variant="Variant.Filled">Iniciar Sesión</MudButton>
-        </NotAuthorized>
-    </AuthorizeView>
+        }
+        <MudButton Href="Login" Style="background-color:#FFFFFF;margin-left:20px;" Variant="Variant.Filled">Iniciar Sesión</MudButton>
+    </NotAuthorized>
+</AuthorizeView>
 
 
 @code {
-    private string? photoUser;
-
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
+
+    private string? photoUser;
+    private bool js = true;
 
     protected async override Task OnParametersSetAsync()
     {

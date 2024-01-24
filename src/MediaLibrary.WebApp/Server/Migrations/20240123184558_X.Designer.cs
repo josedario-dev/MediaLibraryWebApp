@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MediaLibrary.WebApp.Server.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240114165727_xx_")]
-    partial class xx_
+    [Migration("20240123184558_X")]
+    partial class X
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -1,0 +1,117 @@
+﻿document.addEventListener('DOMContentLoaded', function () {
+    loadCountries(); // Cargar países cuando el documento esté listo
+    document.getElementById('registerForm').addEventListener('submit', registerUser);
+});
+
+function loadCountries() {
+    // Aquí deberías cargar los países desde tu API y actualizar el select de países
+    fetch('/api/Countries/combo')
+        .then(response => response.json())
+        .then(data => {
+            const countrySelect = document.getElementById('country');
+            data.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.id;
+                option.textContent = country.name;
+                countrySelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error al cargar países:', error));
+}
+
+function registerUser(event) {
+    event.preventDefault();
+
+    // Crear un objeto FormData para enviar el archivo de la foto y los demás datos del formulario
+    const formData = new FormData(event.target);
+
+    // Imprimir cada par clave/valor para depurar
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+    }
+    const password = formData.get("password")
+    const passwordConfim = formData.get("passwordConfirm")
+    if (password !== passwordConfim) {
+        alert("Las contraseñas no coinciden")
+        return;
+    }
+    let userObject = {};
+    for (let [key, value] of formData.entries()) {
+        if (key !== 'photo' && key !== 'passwordConfirm') {
+            if (key === 'name') {
+                userObject['FirstName'] = value; // Asegurar de que los nombres de las propiedades coincidan con tu backend
+            } else if (key === 'email') {
+                userObject['Email'] = value;
+                userObject['UserName'] = value; // Si UserName es el Email
+                userObject['FullName'] = value; // Si UserName es el Email
+            } else if (key === 'country') {
+                userObject['CountryId'] = parseInt(value); // Convertir a número
+            } else if (key === 'password') {
+                userObject['PasswordConfirm'] = value; // Convertir a número
+                userObject['Password'] = value;
+                userObject['PasswordHash'] = null; 
+            } else {
+                userObject[key] = value; // Para los demás campos que coinciden directamente
+            }
+        }
+    }
+
+    // Establecer UserType. El Usuario siempre será 1, que es User
+    userObject['UserType'] = 1; 
+    userObject['AccessFailedCount'] = 0; 
+    userObject['Country'] = null; 
+    userObject['EmailConfirmed'] = false; 
+    userObject['LockoutEnd'] = null; 
+    userObject['NormalizedUserName'] = null; 
+    userObject['NormalizedEmail'] = null; 
+    userObject['PhoneNumber'] = null; 
+    userObject['PhoneNumberConfirmed'] = false; 
+    userObject['TwoFactorEnabled'] = false; 
+    userObject['Photo'] = null; 
+
+    if (formData.get('photo').size > 0) {
+        const reader = new FileReader();
+        reader.readAsDataURL(formData.get('photo'));
+        reader.onloadend = function () {
+            const base64String = reader.result
+                .replace('data:', '')
+                .replace(/^.+,/, '');
+
+            userObject.photo = base64String;
+
+            // Enviar la solicitud aquí para asegurarse de que se envía después de que la foto esté lista
+            sendUserRegistration(userObject);
+        }
+    } else {
+        // Enviar sin foto
+        sendUserRegistration(userObject);
+    }
+}
+
+function sendUserRegistration(userData) {
+    fetch('/api/Accounts/CreateUser', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al registrar el usuario');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Usuario registrado:', data);
+            // Aquí redirigir al usuario o limpiar el formulario
+            window.location.href = '/'; 
+        })
+        .catch(error => console.error('Error al registrar:', error));
+}
+
+
+function cancelRegistration() {
+    // Lógica para manejar la cancelación del registro
+    window.location.href = '/'; // Redirige al usuario a la página principal
+}
