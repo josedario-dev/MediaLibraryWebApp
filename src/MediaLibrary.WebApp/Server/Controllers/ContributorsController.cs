@@ -125,6 +125,12 @@ namespace MediaLibrary.WebApp.Server.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (!string.IsNullOrEmpty(contributorDto.Photo))
+            {
+                var photoUser = Convert.FromBase64String(contributorDto.Photo);
+                contributorDto.PhotoPath = await _fileStorage.SaveFileAsync(photoUser, ".jpg", _container);
+            }
+
             var updatedReg = await _contributorService.PutAsync(id, contributorDto);
             if (updatedReg == null)
                 return NotFound();

@@ -36,7 +36,7 @@ form {
         margin-bottom: 15px; /* Añade espacio después de cada entrada */
         border: 1px solid #ddd;
         border-radius: 4px;
-        width: 100%; /* Asegúrate de que los inputs usen todo el ancho disponible */
+       
     }
 
     form button {
@@ -67,11 +67,6 @@ form {
         cursor: pointer;
     }
 
-    /* Estilo para alinear horizontalmente los botones al final */
-    form .button-container {
-        display: flex;
-        justify-content: space-between;
-    }
 
 /* Estilo para los errores de validación si es necesario */
 .error-message {
@@ -85,3 +80,14 @@ form {
         padding: 15px;
     }
 }
+
+.button-container {
+    text-align: left; /* Alinea los elementos internos a la izquierda */
+    display: flex; /* Usa Flexbox para el contenedor */
+    gap: 10px; /* Espacio entre los botones */
+}
+
+    .button-container button {
+        cursor: pointer; /* Cambia el cursor a una mano para indicar que es clickeable */
+        /* Añade más estilos para tus botones aquí si es necesario */
+    }

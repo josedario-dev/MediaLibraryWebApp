@@ -14,18 +14,19 @@
     <ValidationSummary />
 
     <MudGrid>
-        <MudItem xs="12" md="6">
+        <MudItem xs="12" md="12" lg="12" sm="12" xl="12">
             <MudTextField Label="Nombre" @bind-Value="contributorDto.NickName" />
         </MudItem>
 
-        <MudItem xs="12" md="6">
+        <MudItem xs="12" md="12" lg="12" sm="12" xl="12">
             <MudDatePicker Label="Fecha nacimiento" @bind-Date="contributorDto.DateOfBirth" />
         </MudItem>
-        <MudItem xs="12" md="6">
+        <MudItem xs="12" md="12" lg="12" sm="12" xl="12">
             <MudTextField Label="Biografía" @bind-Value="contributorDto.Biography" />
         </MudItem>
-        <MudItem xs="12" md="6">
-            <MudTextField Label="Foto" @bind-Value="contributorDto.PhotoPath" />
+        <MudItem xs="12" md="12" lg="12" sm="12" xl="12">
+            <InputImg Label="Seleccione una fotografía" ImageSelected="ImageSelected" ImageURL="@imageUrl" /> 
+            <span></span>
         </MudItem>
 
     </MudGrid>
@@ -39,9 +40,21 @@
 @code {
     [Parameter]
     public int id { get; set; }
-
+    private string imageUrl;
 
     private ContributorDto? contributorDto = new ContributorDto();
+
+    /// <summary>
+    /// Alimenta la foto en formato imagenBase64, para poder luego en el EndPoint subirla a Azure Blob Storage
+    /// </summary>
+    /// <param name="imagenBase64"></param>
+    private void ImageSelected(string imagenBase64)
+    {
+        contributorDto.Photo = imagenBase64;
+        imageUrl = null;
+
+    }
+
 
     // Este método se llama cuando los parámetros del componente se han establecido
     protected override async Task OnParametersSetAsync()
@@ -64,6 +77,8 @@
                     throw new InvalidOperationException($"Error en la solicitud: {errorContent}");
                 }
                 contributorDto = await response.Content.ReadFromJsonAsync<ContributorDto>();
+                imageUrl = contributorDto.PhotoPath; // Asegúrate de que esta es la URL correcta
+
             }
             catch (Exception ex)
             {
@@ -156,6 +171,47 @@
         NavigationManager.NavigateTo($"/contributors");
     }
 
+    private bool uploadingImage = false;
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        var imageFile = e.File;
+        if (imageFile != null)
+        {
+            try
+            {
+                uploadingImage = true;
+                // Convertir el archivo a un Stream o a un formato que tu API pueda manejar
+                using var stream = imageFile.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15); // limitar el tamaño del archivo, por ejemplo, a 15MB
+                var content = new MultipartFormDataContent();
+                content.Add(new StreamContent(stream), "file", imageFile.Name);
+                
+                // Enviar el archivo al servidor
+                var response = await Http.PostAsync("api/Contributors/UploadImage", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    // Leer la nueva URL de la imagen desde la respuesta
+                    var photoPath = await response.Content.ReadAsStringAsync();
+                    contributorDto.PhotoPath = photoPath; // Actualizar la URL de la imagen
+                }
+                else
+                {
+                    // Manejar errores, por ejemplo, mostrar un mensaje al usuario
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    _mudMessagingService.ShowAlertError("Subiendo imagen", $"Falló la subida de la imagen. Este es el mensaje del servidor: {errorMessage}", "Aceptar");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Manejar la excepción
+                Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                uploadingImage = false;
+            }
+        }
+    }
     private bool passwordVisibility = false;
     private InputType passwordInput = InputType.Password;
     private string passwordIcon = Icons.Material.Filled.VisibilityOff;

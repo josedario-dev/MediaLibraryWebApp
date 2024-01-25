@@ -27,7 +27,9 @@
         <input type="password" id="passwordConfirm" name="passwordConfirm" required>
 
         <label for="photo">Foto:</label>
-        <input type="file" id="photo" name="photo">
+        <input type="file" id="photo" name="photo" onchange="previewFile()">
+        <img id="photo-preview" src="" height="200" style="display: none; object-fit: cover; object-position: center; width: 200px;">
+
         <div class="button-container">
             <button type="submit">Guardar</button>
             <button type="button" onclick="cancelRegistration()">Cancelar</button>

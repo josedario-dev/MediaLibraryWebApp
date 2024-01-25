@@ -105,6 +105,8 @@ function sendUserRegistration(userData) {
         .then(data => {
             console.log('Usuario registrado:', data);
             // Aquí redirigir al usuario o limpiar el formulario
+            // Limpia el formulario
+            resetForm();
             window.location.href = '/'; 
         })
         .catch(error => console.error('Error al registrar:', error));
@@ -113,5 +115,41 @@ function sendUserRegistration(userData) {
 
 function cancelRegistration() {
     // Lógica para manejar la cancelación del registro
+    resetForm();
     window.location.href = '/'; // Redirige al usuario a la página principal
+}
+
+
+function previewFile() {
+    const preview = document.getElementById('photo-preview');
+    const file = document.querySelector('input[type=file]').files[0];
+    const reader = new FileReader();
+
+    reader.addEventListener("load", function () {
+        // convertir imagen file a cadena base64 y mostrarla
+        preview.src = reader.result;
+        preview.style.display = 'block'; // mostrar la imagen
+    }, false);
+
+    if (file) {
+        reader.readAsDataURL(file); // leer el archivo y enviarlo a onload
+    }
+}
+
+
+function resetForm() {
+    // Resetear el formulario
+    document.getElementById('registerForm').reset();
+
+    // Ocultar la vista previa de la imagen y restablecer el src
+    const photoPreview = document.getElementById('photo-preview');
+    photoPreview.style.display = 'none';
+    photoPreview.src = '';
+
+    const name = document.getElementById('name');
+    name.style.display=""
+    const email = document.getElementById('email');
+    email.style.display = ""
+    const password = document.getElementById('password');
+    password.style.display = ""
 }
